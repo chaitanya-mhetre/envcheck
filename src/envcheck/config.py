@@ -8,6 +8,7 @@ services:
   db:    {type: postgres, dsn_env: DATABASE_URL}
   cache: {type: redis, url: "redis://localhost:6379/0"}
   api:   {type: tcp, host: localhost, port: 8080}
+  web:   {type: http, url: "http://localhost:8081/health", expect_status: 200, expect_body: ok}
 ports_free: [8000]
 env:
   required: [DATABASE_URL]
@@ -25,9 +26,12 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 DEFAULT_FILE = "envcheck.yaml"
+
+
+HTTP_TYPES = frozenset({"http", "https"})
 
 
 class ConfigError(Exception):
@@ -46,11 +50,23 @@ class ServiceSpec(_Strict):
     url_env: str | None = None
     dsn_env: str | None = None  # alias of url_env for postgres
     timeout_s: float = Field(default=3.0, gt=0)
+    # http/https only: accepted status codes (default: any 2xx) and a substring the body must contain
+    expect_status: list[int] | None = None
+    expect_body: str | None = None
+
+    @field_validator("expect_status", mode="before")
+    @classmethod
+    def _status_list(cls, value: Any) -> Any:
+        return [value] if isinstance(value, int) else value
 
     @model_validator(mode="after")
     def _has_target(self) -> ServiceSpec:
         if not (self.url or self.url_env or self.dsn_env or (self.host and self.port)):
             raise ValueError("service needs url, url_env/dsn_env, or host + port")
+        if self.type not in HTTP_TYPES and (self.expect_status or self.expect_body is not None):
+            raise ValueError("expect_status/expect_body only apply to type: http")
+        if self.expect_status and any(not 100 <= s <= 599 for s in self.expect_status):
+            raise ValueError("expect_status codes must be between 100 and 599")
         return self
 
 
