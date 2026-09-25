@@ -1,12 +1,26 @@
 [project]
 name = "envcheck"
 version = "0.1.0"
-description = "Add your description here"
+description = "Declare the dev environment a project needs, then check it locally or in CI"
 readme = "README.md"
 authors = [
     { name = "Chaitanya Mhetre", email = "mhetrechaitanya06@gmail.com" }
 ]
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["doctor", "environment", "developer-experience", "ci", "docker", "dotenv"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Build Tools",
+    "Typing :: Typed",
+]
 dependencies = [
     "packaging>=26.3",
     "pydantic>=2.13.5",

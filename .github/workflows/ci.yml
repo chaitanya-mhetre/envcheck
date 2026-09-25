@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --frozen --all-extras
+      - run: docker compose up -d --wait        # real Postgres + Redis for the integration tests
+      - run: make check
+      - name: envcheck on its own repo (JUnit)
+        run: |
+          cp .env.example .env
+          uv run envcheck --ci --format junit > envcheck.xml
+      - uses: mikepenz/action-junit-report@v5
+        if: always()
+        with:
+          report_paths: envcheck.xml
+          check_name: envcheck (${{ matrix.python }})
+      - run: uv build
