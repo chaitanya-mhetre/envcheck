@@ -1,0 +1,21 @@
+# A typical FastAPI + Postgres + Redis service
+version: 1
+tools:
+  python: ">=3.12"
+  uv: "*"
+  docker: "*"
+  docker compose: "*"
+docker_daemon: true
+services:
+  db: {type: postgres, dsn_env: DATABASE_URL}
+  cache: {type: redis, url_env: REDIS_URL}
+ports_free: [8000]
+env:
+  required: [DATABASE_URL, REDIS_URL, JWT_SECRET]
+  patterns:
+    DATABASE_URL: "^postgres(ql)?(\\+\\w+)?://"
+    JWT_SECRET: "^.{32,}$"          # at least 32 characters
+  drift: {example: .env.example, actual: .env}
+files: [alembic.ini]
+ci:
+  skip: [docker_daemon, ports_free]

@@ -1,0 +1,18 @@
+# envcheck checking its own development environment: `make doctor`
+version: 1
+tools:
+  python: ">=3.12"
+  uv: "*"
+  docker: "*"
+  docker compose: "*"
+docker_daemon: true
+services:
+  postgres: {type: postgres, url_env: ENVCHECK_PG_URL}
+  redis: {type: redis, url_env: ENVCHECK_REDIS_URL}
+env:
+  required: [ENVCHECK_PG_URL, ENVCHECK_REDIS_URL]
+  patterns: {ENVCHECK_PG_URL: "^postgres(ql)?://"}
+  drift: {example: .env.example, actual: .env}
+files: [pyproject.toml, docker-compose.yml]
+ci:
+  skip: [docker_daemon, services, env]
