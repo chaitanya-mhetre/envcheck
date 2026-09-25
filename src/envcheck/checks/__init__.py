@@ -11,6 +11,7 @@ from importlib.metadata import entry_points
 
 from envcheck.checks.base import Check
 from envcheck.checks.env import EnvDriftCheck, EnvVarCheck
+from envcheck.checks.http import HttpCheck
 from envcheck.checks.services import PostgresCheck, RedisCheck, ServiceCheck
 from envcheck.checks.system import DockerDaemonCheck, FileCheck, PortFreeCheck, ToolCheck
 from envcheck.config import Config
@@ -20,6 +21,8 @@ BUILTIN_SERVICES: dict[str, type[ServiceCheck]] = {
     "redis": RedisCheck,
     "postgres": PostgresCheck,
     "postgresql": PostgresCheck,
+    "http": HttpCheck,
+    "https": HttpCheck,
 }
 
 
