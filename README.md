@@ -35,7 +35,7 @@ project (async I/O, subprocesses, network protocols, plugins) with a small pract
 ```
 envcheck.yaml ─► Config (pydantic, strict, versioned) ─► plan() ─► [Check, Check, ...]
                                                               │
-                  service types: tcp | redis | postgres | <entry-point plugins>
+                  service types: tcp | redis | postgres | http | <entry-point plugins>
                                                               │
                      async runner (asyncio.gather, semaphore, per-check timeout)
                                                               │
@@ -45,13 +45,15 @@ envcheck.yaml ─► Config (pydantic, strict, versioned) ─► plan() ─► [
   can't hang or kill the run.
 - **Service health versus an open port:** `tcp` proves something is listening. `redis` speaks RESP (optional `AUTH`, then `PING`) with no
   client library, and `postgres` logs in and runs `SELECT 1` (through the optional `psycopg` extra; without it, it falls back to TCP and returns a warning).
+  `http` sends a real `GET` (hand-written HTTP/1.0, TLS for `https://`) and checks the status (default any 2xx, or
+  `expect_status`) and optionally a body substring (`expect_body`). Redirects aren't followed, and URLs from env vars are never printed.
 - **Version parsing:** each known tool has its own command and regex (`java` prints to stderr, `kubectl` needs `--client`). Unknown tools fall
   back to `<tool> --version`.
 
 ## Features
 - Tools with constraints: PEP 440 (`>=3.12`, `>=1,<2`), npm-style `^20` / `~1.9`, bare `3.12` (any 3.12.x), and `*`.
 - A Docker daemon check, with a specific hint when the problem is docker-group permissions.
-- Postgres, Redis and TCP services. Targets come from a literal URL, an env var (`url_env`/`dsn_env`), or host + port.
+- Postgres, Redis, TCP and HTTP(S) services. Targets come from a literal URL, an env var (`url_env`/`dsn_env`), or host + port.
 - Free ports (with an `lsof`/`ss` hint), env var presence and regex, `.env` vs `.env.example` drift, and required files.
 - `.env` values are merged in, but the real environment wins.
 - **Secret values are never printed**: `DATABASE_URL is set`, never its value. Tests enforce this.
@@ -78,6 +80,7 @@ services:
   db:    {type: postgres, dsn_env: DATABASE_URL}
   cache: {type: redis, url_env: REDIS_URL}
   api:   {type: tcp, host: localhost, port: 8080, timeout_s: 2}
+  web:   {type: http, url: "http://localhost:8081/health", expect_status: 200, expect_body: '"status":"ok"'}
 ports_free: [8000]
 env:
   required: [DATABASE_URL, REDIS_URL]
@@ -134,11 +137,12 @@ See [docs/benchmarks.md](docs/benchmarks.md).
 
 ## Limitations
 - Linux and macOS only. Windows isn't supported or tested.
-- No TLS for Redis (`rediss://` gives a warning). HTTP health checks aren't built in yet.
+- No TLS for Redis (`rediss://` gives a warning).
+- The HTTP check doesn't follow redirects, speaks only HTTP/1.0 `GET`, reads at most 64 KB of body, and has no custom headers or auth yet.
 - `init` heuristics only know Postgres and Redis images.
 
 ## Roadmap
-- HTTP service type (`GET /health` expecting 200)
+- HTTP check: custom headers / bearer auth (read from an env var)
 - Adopting it as `make doctor` in the Growth portfolio repos (spec milestone M5)
 - `--fix` for trivial cases (copying `.env.example` to `.env`)
 

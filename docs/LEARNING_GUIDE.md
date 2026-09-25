@@ -95,6 +95,13 @@ change the format later. A `model_validator` enforces "url, env var, or host + p
     `packaging.version.Version` for correct comparison (`1.10 > 1.9`).
 15. **What does `^20` mean and how did you implement it?** "Compatible with 20": `>=20, <21`. It's translated to a PEP 440 `SpecifierSet`.
 16. **Why does `init` print what it detected?** Heuristics are sometimes wrong, and silent guesses are worse than visible ones.
+17. **How does the HTTP check avoid needing an HTTP client library?** It sends `GET <path> HTTP/1.0` with `Connection: close`
+    over `asyncio.open_connection` (with an `ssl` context for https). HTTP/1.0 means the server won't use chunked encoding
+    and closes the socket at the end of the body, so parsing is one status line, headers, then read until `Content-Length` or
+    EOF (`checks/http.py`). For more than a health probe you'd use httpx: keep-alive, HTTP/2, redirects, proxies.
+18. **Why one `wait_for` around the whole request instead of per-read timeouts?** A slow server can dribble one byte per second
+    and never trip a per-read timeout. One deadline for connect, send and receive bounds the total time, which is what a user
+    waiting on `envcheck` cares about. The body read is also capped (64 KB) so a misbehaving server can't exhaust memory.
 
 ## 5. Try it yourself
 - Add an `http` service type: `GET` a URL and expect a status code, with a timeout.

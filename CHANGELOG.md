@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- New `http` / `https` service type: `GET` a URL and check the status (default any 2xx, or `expect_status`,
+  one code or a list) and an optional body substring (`expect_body`). Hand-written HTTP/1.0 over asyncio
+  streams (TLS via `ssl`), a single deadline for the whole exchange, body read capped at 64 KB, redirects not followed,
+  and URLs from env vars (and query strings) never printed.
+
 ## 0.1.0 — 2026-09-25 (unreleased, not on PyPI)
 - `envcheck.yaml` schema (strict, versioned).
 - Checks: tool + version constraint (PEP 440, `^`, `~`, `*`), Docker daemon, TCP, Redis (RESP AUTH/PING, no
